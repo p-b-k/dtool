@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 1.0 -->
+<interface>
+  <!-- interface-name dtool.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <object class="GtkWindow" id="mainwin">
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkBox">
+            <child>
+              <object class="GtkButton" id="add">
+                <property name="halign">start</property>
+                <property name="icon-name">list-add-symbolic</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="edit">
+                <property name="halign">start</property>
+                <property name="icon-name">accessories-text-editor-symbolic</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkComboBox">
+                <property name="hexpand">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkIconView">
+            <property name="height-request">19</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -1,0 +1,5 @@
+<gresources>
+  <gresource>
+    <file alias="mainwin.ui">src/mainwin.ui</file>
+  </gresource>
+</gresources>
