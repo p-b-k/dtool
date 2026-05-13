@@ -1,3 +1,4 @@
 /target
 dtool.res.gresource
 .*
+test_proj.toml
