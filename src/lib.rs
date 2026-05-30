@@ -2,7 +2,9 @@
 // Create a GTK4 Tool to manage dev tasks that works nicely in hyper
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+pub mod dtools;
 pub mod projdef;
+pub mod project;
 pub mod projshell;
 
 // pub fn add(left: u64, right: u64) -> u64 {
