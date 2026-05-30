@@ -1,4 +1,4 @@
-use dtool::{
+use core::{
     projdef::ProjDef,
     projshell::{KittyTerm, Launcher, Shell, TermLauncher},
 };

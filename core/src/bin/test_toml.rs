@@ -1,4 +1,4 @@
-use dtool::projdef::ProjDef;
+use core::projdef::ProjDef;
 
 fn main() {
     let name = "Test Project".to_string();
