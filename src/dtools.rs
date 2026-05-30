@@ -1,3 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Main user data and configuration
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+use crate::project::Project;
+
+#[derive(Debug, Clone)]
+pub struct AppConfig {
+    pub projects: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProjEntry {
+    pub dir: String,
+    pub proj: Option<Project>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub projects: Vec<String>,
+}
