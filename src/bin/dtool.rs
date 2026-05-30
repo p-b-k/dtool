@@ -19,7 +19,7 @@ fn main() -> glib::ExitCode {
         app.add_window(&window);
 
         let b_add: gtk::Button = builder.object("add").expect("Unable to get add button");
-        let b_edit: gtk::Button = builder.object("edit").expect("Unable to get edit button");
+        let _b_edit: gtk::Button = builder.object("edit").expect("Unable to get edit button");
 
         b_add.connect_clicked(|_| {
             eprintln!("Clicked!");
