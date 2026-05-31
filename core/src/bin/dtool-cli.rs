@@ -11,13 +11,6 @@ use std::{env, process::exit};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-enum CmdActionType {
-    List,
-    Add,
-    Promote,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 enum CmdAction {
     List,
     Add(String, String),
@@ -39,16 +32,15 @@ pub fn main() {
 
     let args: Vec<String> = env::args().collect();
 
-    let mut cmd: Option<CmdActionType> = None;
+    let mut cmd: Option<&str> = None;
 
     if args.len() > 1 {
         if &args[1] == "list" {
-            // println!("Listing Projects");
-            cmd = Some(CmdActionType::List);
+            cmd = Some("list");
         } else if &args[1] == "add" {
-            cmd = Some(CmdActionType::Add);
+            cmd = Some("add");
         } else if &args[1] == "promote" {
-            cmd = Some(CmdActionType::Promote);
+            cmd = Some("promote");
         } else {
             eprintln!("Unknown initial command: '{}'", &args[1]);
             exit(-1);
@@ -62,7 +54,10 @@ pub fn main() {
                     eprintln!("Error running [{t:?}] -- {e}");
                     exit(-1);
                 }
-                None => {}
+                None => {
+                    app.sync_config();
+                    app.sync_projects();
+                }
             },
             Err(s) => {
                 eprintln!("Unable to read {cmd:?} command from parameters: {s}");
@@ -76,19 +71,16 @@ fn print_help(name: &String) {
     println!("{name}: A Development tool");
 }
 
-fn read_command(
-    ctype: &CmdActionType,
-    args: Vec<String>,
-    index: usize,
-) -> Result<CmdAction, String> {
+fn read_command(ctype: &str, args: Vec<String>, index: usize) -> Result<CmdAction, String> {
     match ctype {
-        CmdActionType::List => read_list_cmd(args, index),
-        CmdActionType::Add => read_add_cmd(args, index),
-        CmdActionType::Promote => read_promote_cmd(args, index),
+        "list" => read_list_cmd(args, index),
+        "add" => read_add_cmd(args, index),
+        "promote" => read_promote_cmd(args, index),
+        _ => panic!("read_command: Unknown command type {ctype}"),
     }
 }
 
-fn read_list_cmd(args: Vec<String>, index: usize) -> Result<CmdAction, String> {
+fn read_list_cmd(_args: Vec<String>, _index: usize) -> Result<CmdAction, String> {
     Ok(CmdAction::List)
 }
 
@@ -122,7 +114,10 @@ fn read_add_cmd(args: Vec<String>, index: usize) -> Result<CmdAction, String> {
         (Some(t), Some(p)) => Ok(CmdAction::Add(t, p)),
         (Some(t), None) => Ok(CmdAction::Add(
             t,
-            env::var("PWD").expect("Unable to get current working directory"),
+            format!(
+                "{}/proj.toml",
+                env::var("PWD").expect("Unable to get current working directory")
+            ),
         )),
         (None, None) => Err(format!("At least a tag is required")),
         _ => panic!("Can't get here"),
@@ -191,11 +186,11 @@ fn add_action(app: &mut AppState, tag: &String, path: &String) -> Option<String>
 
     app.projects.push(entry);
 
-    app.sync();
+    app.sync_projects();
 
     None
 }
 
-fn promote_action(app: &AppState, tag: &String) -> Option<String> {
+fn promote_action(_app: &AppState, _tag: &String) -> Option<String> {
     Some(format!("apromote_action: Not Implemented Yet"))
 }

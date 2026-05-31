@@ -11,15 +11,27 @@ use crate::{projdef::ProjDef, project::ProjData};
 use std::fs::write;
 
 const CONFIG_FILE: &str = ".config/dtool/config.toml";
+const PROJ_FILE: &str = ".config/dtool/projects.toml";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
-    pub projects: Vec<ProjDef>,
+    term: Option<String>,
 }
 
 impl AppConfig {
     pub fn new() -> AppConfig {
-        AppConfig {
+        AppConfig { term: None }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjList {
+    pub projects: Vec<ProjDef>,
+}
+
+impl ProjList {
+    pub fn new() -> ProjList {
+        ProjList {
             projects: Vec::new(),
         }
     }
@@ -34,6 +46,7 @@ pub struct ProjEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppState {
     pub projects: Vec<ProjEntry>,
+    pub config: AppConfig,
 }
 
 impl AppState {
@@ -54,9 +67,25 @@ impl AppState {
             false => AppConfig::new(),
         };
 
-        let mut state: AppState = AppState::new();
+        let proj_file_path = format!(
+            "{}/{PROJ_FILE}",
+            env::var("HOME").expect("Unable to get home dir")
+        );
 
-        for pd in cfg.projects {
+        let plist = match fs::exists(&proj_file_path).unwrap() {
+            true => {
+                let proj_file_data = fs::read_to_string(&proj_file_path)
+                    .expect(format!("Unable to read file {proj_file_path}").as_str());
+                let proj_list: ProjList = toml::from_str(proj_file_data.as_str())
+                    .expect(format!("Unable to desrialize AppC").as_str());
+                proj_list
+            }
+            false => ProjList::new(),
+        };
+
+        let mut state: AppState = AppState::new(cfg);
+
+        for pd in plist.projects {
             state.projects.push(ProjEntry {
                 pdef: pd.clone(),
                 proj: load_proj_file(&pd.path),
@@ -66,13 +95,14 @@ impl AppState {
         Ok(state)
     }
 
-    fn new() -> AppState {
+    fn new(cfg: AppConfig) -> AppState {
         AppState {
             projects: Vec::new(),
+            config: cfg,
         }
     }
 
-    pub fn sync(&self) {
+    pub fn sync_projects(&self) {
         let mut projects: Vec<ProjDef> = Vec::new();
         for p in &self.projects {
             projects.push(ProjDef {
@@ -81,14 +111,35 @@ impl AppState {
             });
         }
 
-        let config = AppConfig { projects };
+        let proj_list = ProjList { projects };
+
+        let proj_file_path = format!(
+            "{}/{PROJ_FILE}",
+            env::var("HOME").expect("Unable to get home dir")
+        );
+
+        let file_str = toml::to_string(&proj_list).unwrap();
+        match write(&proj_file_path, &file_str) {
+            Ok(_) => {}
+            Err(e) => eprintln!("{e}"),
+        };
+    }
+
+    pub fn sync_config(&self) {
+        let mut projects: Vec<ProjDef> = Vec::new();
+        for p in &self.projects {
+            projects.push(ProjDef {
+                tag: p.pdef.tag.clone(),
+                path: p.pdef.path.clone(),
+            });
+        }
 
         let config_file_path = format!(
             "{}/{CONFIG_FILE}",
             env::var("HOME").expect("Unable to get home dir")
         );
 
-        let file_str = toml::to_string(&config).unwrap();
+        let file_str = toml::to_string(&self.config).unwrap();
         match write(&config_file_path, &file_str) {
             Ok(_) => {}
             Err(e) => eprintln!("{e}"),
