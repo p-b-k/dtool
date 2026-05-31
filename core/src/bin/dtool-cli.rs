@@ -6,6 +6,12 @@ use core::{
     dtools::{AppState, ProjEntry, load_proj_file},
     projdef::ProjDef,
 };
+
+use ansi_term::{
+    Color::{Green, Red},
+    Style,
+};
+
 use std::{env, process::exit};
 
 use serde::{Deserialize, Serialize};
@@ -152,9 +158,14 @@ fn read_promote_cmd(args: Vec<String>, index: usize) -> Result<CmdAction, String
 
 fn print_proj_list(app: &AppState) -> Option<String> {
     for pe in &app.projects {
+        let tag_width = 30;
+        let tag_color = match &pe.proj {
+            Ok(_) => Green,
+            Err(_) => Red,
+        };
         println!(
-            "{} {}",
-            pe.pdef.tag,
+            "{:tag_width$} {}",
+            Style::new().fg(tag_color).paint(&pe.pdef.tag),
             match &pe.proj {
                 Ok(p) => p.name.clone(),
                 Err(s) => s.clone(),
