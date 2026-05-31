@@ -163,9 +163,14 @@ fn print_proj_list(app: &AppState) -> Option<String> {
             Ok(_) => Green,
             Err(_) => Red,
         };
+        print!(
+            "{}",
+            Style::new()
+                .fg(tag_color)
+                .paint(format!("{:tag_width$}", &pe.pdef.tag))
+        );
         println!(
-            "{:tag_width$} {}",
-            Style::new().fg(tag_color).paint(&pe.pdef.tag),
+            "{}",
             match &pe.proj {
                 Ok(p) => p.name.clone(),
                 Err(s) => s.clone(),
