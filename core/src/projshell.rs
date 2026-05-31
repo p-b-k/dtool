@@ -31,7 +31,7 @@ pub struct KittyTerm {
 impl Terminal for KittyTerm {
     fn start(&self, shell: &Shell, proj: &ProjDef) -> LaunchResult {
         match Command::new("kitty")
-            .env("PNAME", proj.name.as_str())
+            .env("PTAG", proj.tag.as_str())
             .env("PROOT", proj.path.as_str())
             .arg(shell.exec.as_str())
             // .args(shell.parms)

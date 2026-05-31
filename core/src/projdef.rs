@@ -7,7 +7,7 @@ use std::fs::{read_to_string, write};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ProjDef {
-    pub name: String,
+    pub tag: String,
     pub path: String,
 }
 

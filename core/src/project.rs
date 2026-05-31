@@ -2,7 +2,10 @@
 // Actual Project Data
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Debug, Clone)]
-pub struct Project {
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjData {
     pub name: String,
+    pub desc: String,
 }

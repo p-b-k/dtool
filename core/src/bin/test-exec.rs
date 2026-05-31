@@ -17,7 +17,7 @@ fn main() {
     };
 
     let p = ProjDef {
-        name: "Test Project".to_string(),
+        tag: "test".to_string(),
         path: std::env::current_dir()
             .unwrap()
             .to_str()
