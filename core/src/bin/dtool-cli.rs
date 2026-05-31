@@ -2,7 +2,10 @@
 // Command line tool for managing projects
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-use core::dtools::AppState;
+use core::{
+    dtools::{AppState, ProjEntry, load_proj_file},
+    projdef::ProjDef,
+};
 use std::{env, process::exit};
 
 use serde::{Deserialize, Serialize};
@@ -54,9 +57,13 @@ pub fn main() {
 
     match &cmd {
         Some(t) => match read_command(t, args, 2) {
-            Ok(mut c) => {
-                c.execute(&mut app);
-            }
+            Ok(mut c) => match c.execute(&mut app) {
+                Some(e) => {
+                    eprintln!("Error running [{t:?}] -- {e}");
+                    exit(-1);
+                }
+                None => {}
+            },
             Err(s) => {
                 eprintln!("Unable to read {cmd:?} command from parameters: {s}");
             }
@@ -163,12 +170,32 @@ fn print_proj_list(app: &AppState) -> Option<String> {
     None
 }
 
-fn add_action(app: &AppState, tag: &String, path: &String) -> Option<String> {
-    eprintln!("add_action: Not Implemented Yet");
+fn add_action(app: &mut AppState, tag: &String, path: &String) -> Option<String> {
+    for p in &app.projects {
+        if &p.pdef.tag == tag {
+            panic!("add_action: tag [{tag}] already points to {}", p.pdef.path)
+        } else {
+            if &p.pdef.path == path {
+                panic!("add_action: tag [{tag}] already points to {}", p.pdef.path)
+            }
+        }
+    }
+
+    let entry = ProjEntry {
+        pdef: ProjDef {
+            tag: tag.clone(),
+            path: path.clone(),
+        },
+        proj: load_proj_file(path),
+    };
+
+    app.projects.push(entry);
+
+    app.sync();
+
     None
 }
 
 fn promote_action(app: &AppState, tag: &String) -> Option<String> {
-    eprintln!("apromote_action: Not Implemented Yet");
-    None
+    Some(format!("apromote_action: Not Implemented Yet"))
 }
