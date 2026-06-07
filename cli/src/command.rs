@@ -1,0 +1,248 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Command Support
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+use std::env;
+
+use core::{
+    dtools::{AppState, ProjEntry, load_proj_file},
+    projdef::ProjDef,
+};
+
+use ansi_term::{Color, Style};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CmdAction {
+    List,
+    Add(String, String),
+    Remove(String),
+    Promote(String),
+}
+
+impl CmdAction {
+    pub fn from_args(cmd: &str, args: &Vec<String>, index: usize) -> Result<CmdAction, String> {
+        match cmd {
+            "list" => read_list_cmd(args, index),
+            "add" => read_add_cmd(args, index),
+            "remove" => read_remove_cmd(args, index),
+            "promote" => read_promote_cmd(args, index),
+            _ => Err(format!("Command {cmd} undefined")),
+        }
+    }
+}
+
+pub fn execute(action: &CmdAction, app: &mut AppState) -> Option<String> {
+    match action {
+        CmdAction::List => print_proj_list(app),
+        CmdAction::Add(t, p) => add_action(app, &t.to_string(), &p.to_string()),
+        CmdAction::Remove(t) => remove_action(app, &t.to_string()),
+        CmdAction::Promote(t) => promote_action(app, &t.to_string()),
+    }
+}
+
+fn read_promote_cmd(args: &Vec<String>, index: usize) -> Result<CmdAction, String> {
+    let mut tag: Option<String> = None;
+
+    let mut i = index;
+    while i < args.len() {
+        if &args[i] == "--help" {
+            eprintln!("Help Not Implemented Yet");
+        } else {
+            match tag {
+                None => {
+                    tag = Some(args[i].clone());
+                }
+                Some(_) => {
+                    panic!("Unexpected parameter: {}", args[i]);
+                }
+            }
+        }
+        i = i + 1;
+    }
+
+    match tag {
+        Some(t) => Ok(CmdAction::Promote(t)),
+        None => Err(format!("A tag is required")),
+    }
+}
+
+fn promote_action(app: &mut AppState, tag: &String) -> Option<String> {
+    let mut index: Option<usize> = None;
+
+    for i in 0..app.projects.len() {
+        if tag == &app.projects[i].pdef.tag {
+            index = Some(i);
+            break;
+        }
+    }
+
+    match index {
+        None => Some(format!("No project found for {tag}")),
+        Some(i) => {
+            let top = app.projects[i].clone();
+            for j in 0..i {
+                app.projects[i - j] = app.projects[i - (j + 1)].clone();
+            }
+            app.projects[0] = top;
+            app.sync_projects();
+            None
+        }
+    }
+}
+
+fn read_list_cmd(_args: &Vec<String>, _index: usize) -> Result<CmdAction, String> {
+    Ok(CmdAction::List)
+}
+
+fn print_proj_list(app: &AppState) -> Option<String> {
+    for pe in &app.projects {
+        let tag_width = 16;
+        let name_width = 32;
+        let tag_color = match &pe.proj {
+            Ok(_) => Color::Green,
+            Err(_) => Color::Red,
+        };
+        print!(
+            "{}",
+            Style::new()
+                .fg(tag_color)
+                .paint(format!("{:tag_width$}", &pe.pdef.tag))
+        );
+        match &pe.proj {
+            Ok(p) => {
+                // The extra space is because 0x26d4 is a double (screen) width character
+                println!("{:name_width$}  {}", &p.name, &p.desc)
+            }
+            Err(s) => {
+                println!("{:name_width$} {s}", char::from_u32(0x26d4 as u32).unwrap())
+            }
+        }
+        // println!(
+        //     "{}",
+        //     match &pe.proj {
+        //         Ok(p) => p.name.clone(),
+        //         Err(s) => s.clone(),
+        //     }
+        // );
+    }
+
+    None
+}
+
+fn read_add_cmd(args: &Vec<String>, index: usize) -> Result<CmdAction, String> {
+    let mut tag: Option<String> = None;
+    let mut path: Option<String> = None;
+
+    let mut i = index;
+    while i < args.len() {
+        if &args[i] == "--help" {
+            eprintln!("Help Not Implemented Yet");
+        } else {
+            match tag {
+                None => {
+                    tag = Some(args[i].clone());
+                }
+                Some(_) => match path {
+                    None => {
+                        path = Some(args[i].clone());
+                    }
+                    Some(_) => {
+                        panic!("Unexpected parameter: {}", args[i]);
+                    }
+                },
+            }
+        }
+        i = i + 1;
+    }
+
+    match (tag, path) {
+        (Some(t), Some(p)) => Ok(CmdAction::Add(t, p)),
+        (Some(t), None) => Ok(CmdAction::Add(
+            t,
+            format!(
+                "{}/proj.toml",
+                env::var("PWD").expect("Unable to get current working directory")
+            ),
+        )),
+        (None, None) => Err(format!("At least a tag is required")),
+        _ => panic!("Can't get here"),
+    }
+}
+fn add_action(app: &mut AppState, tag: &String, path: &String) -> Option<String> {
+    for p in &app.projects {
+        if &p.pdef.tag == tag {
+            return Some(format!(
+                "add_action: tag [{tag}] already points to {}",
+                p.pdef.path
+            ));
+        } else {
+            if &p.pdef.path == path {
+                return Some(format!(
+                    "add_action: tag [{tag}] already points to {}",
+                    p.pdef.path
+                ));
+            }
+        }
+    }
+
+    let entry = ProjEntry {
+        pdef: ProjDef {
+            tag: tag.clone(),
+            path: path.clone(),
+        },
+        proj: load_proj_file(path),
+    };
+
+    app.projects.push(entry);
+
+    app.sync_projects();
+
+    None
+}
+
+fn read_remove_cmd(args: &Vec<String>, index: usize) -> Result<CmdAction, String> {
+    let mut tag: Option<String> = None;
+
+    let mut i = index;
+    while i < args.len() {
+        if &args[i] == "--help" {
+            eprintln!("Help Not Implemented Yet");
+        } else {
+            match tag {
+                None => {
+                    tag = Some(args[i].clone());
+                }
+                Some(_) => {
+                    panic!("Unexpected parameter: {}", args[i]);
+                }
+            }
+        }
+        i = i + 1;
+    }
+
+    match tag {
+        Some(t) => Ok(CmdAction::Remove(t)),
+        None => Err(format!("A tag is required")),
+    }
+}
+
+fn remove_action(app: &mut AppState, tag: &String) -> Option<String> {
+    let mut index: Option<usize> = None;
+
+    for i in 0..app.projects.len() {
+        if tag == &app.projects[i].pdef.tag {
+            index = Some(i);
+            break;
+        }
+    }
+
+    match index {
+        None => Some(format!("No project found for {tag}")),
+        Some(i) => {
+            app.projects.remove(i);
+            app.sync_projects();
+            None
+        }
+    }
+}

@@ -494,6 +494,7 @@ dependencies = [
 name = "gui"
 version = "0.1.0"
 dependencies = [
+ "core",
  "gio",
  "gtk4",
 ]
@@ -840,6 +841,9 @@ checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
 [[package]]
 name = "tui"
 version = "0.1.0"
+dependencies = [
+ "core",
+]
 
 [[package]]
 name = "unicode-ident"

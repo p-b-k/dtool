@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+core = { version = "0.1.0", path = "../core" }
 gio = "0.22.6"
 gtk4 = "0.11.3"
