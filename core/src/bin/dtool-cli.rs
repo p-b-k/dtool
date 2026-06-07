@@ -34,6 +34,7 @@ impl CmdAction {
 }
 
 pub fn main() {
+    env_logger::init();
     let mut app = AppState::load().unwrap();
 
     let args: Vec<String> = env::args().collect();
