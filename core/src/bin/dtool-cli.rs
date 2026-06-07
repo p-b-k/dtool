@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 enum CmdAction {
     List,
     Add(String, String),
+    Remove(String),
     Promote(String),
 }
 
@@ -28,6 +29,7 @@ impl CmdAction {
         match self {
             CmdAction::List => print_proj_list(app),
             CmdAction::Add(t, p) => add_action(app, t, p),
+            CmdAction::Remove(t) => remove_action(app, t),
             CmdAction::Promote(t) => promote_action(app, t),
         }
     }
@@ -35,6 +37,7 @@ impl CmdAction {
 
 pub fn main() {
     env_logger::init();
+
     let mut app = AppState::load().unwrap();
 
     let args: Vec<String> = env::args().collect();
@@ -46,6 +49,8 @@ pub fn main() {
             cmd = Some("list");
         } else if &args[1] == "add" {
             cmd = Some("add");
+        } else if &args[1] == "remove" {
+            cmd = Some("remove");
         } else if &args[1] == "promote" {
             cmd = Some("promote");
         } else {
@@ -82,6 +87,7 @@ fn read_command(ctype: &str, args: Vec<String>, index: usize) -> Result<CmdActio
     match ctype {
         "list" => read_list_cmd(args, index),
         "add" => read_add_cmd(args, index),
+        "remove" => read_remove_cmd(args, index),
         "promote" => read_promote_cmd(args, index),
         _ => panic!("read_command: Unknown command type {ctype}"),
     }
@@ -128,6 +134,32 @@ fn read_add_cmd(args: Vec<String>, index: usize) -> Result<CmdAction, String> {
         )),
         (None, None) => Err(format!("At least a tag is required")),
         _ => panic!("Can't get here"),
+    }
+}
+
+fn read_remove_cmd(args: Vec<String>, index: usize) -> Result<CmdAction, String> {
+    let mut tag: Option<String> = None;
+
+    let mut i = index;
+    while i < args.len() {
+        if &args[i] == "--help" {
+            eprintln!("Help Not Implemented Yet");
+        } else {
+            match tag {
+                None => {
+                    tag = Some(args[i].clone());
+                }
+                Some(_) => {
+                    panic!("Unexpected parameter: {}", args[i]);
+                }
+            }
+        }
+        i = i + 1;
+    }
+
+    match tag {
+        Some(t) => Ok(CmdAction::Remove(t)),
+        None => Err(format!("A tag is required")),
     }
 }
 
@@ -195,10 +227,16 @@ fn print_proj_list(app: &AppState) -> Option<String> {
 fn add_action(app: &mut AppState, tag: &String, path: &String) -> Option<String> {
     for p in &app.projects {
         if &p.pdef.tag == tag {
-            panic!("add_action: tag [{tag}] already points to {}", p.pdef.path)
+            return Some(format!(
+                "add_action: tag [{tag}] already points to {}",
+                p.pdef.path
+            ));
         } else {
             if &p.pdef.path == path {
-                panic!("add_action: tag [{tag}] already points to {}", p.pdef.path)
+                return Some(format!(
+                    "add_action: tag [{tag}] already points to {}",
+                    p.pdef.path
+                ));
             }
         }
     }
@@ -218,6 +256,46 @@ fn add_action(app: &mut AppState, tag: &String, path: &String) -> Option<String>
     None
 }
 
-fn promote_action(_app: &AppState, _tag: &String) -> Option<String> {
-    Some(format!("apromote_action: Not Implemented Yet"))
+fn remove_action(app: &mut AppState, tag: &String) -> Option<String> {
+    let mut index: Option<usize> = None;
+
+    for i in 0..app.projects.len() {
+        if tag == &app.projects[i].pdef.tag {
+            index = Some(i);
+            break;
+        }
+    }
+
+    match index {
+        None => Some(format!("No project found for {tag}")),
+        Some(i) => {
+            app.projects.remove(i);
+            app.sync_projects();
+            None
+        }
+    }
+}
+
+fn promote_action(app: &mut AppState, tag: &String) -> Option<String> {
+    let mut index: Option<usize> = None;
+
+    for i in 0..app.projects.len() {
+        if tag == &app.projects[i].pdef.tag {
+            index = Some(i);
+            break;
+        }
+    }
+
+    match index {
+        None => Some(format!("No project found for {tag}")),
+        Some(i) => {
+            let top = app.projects[i].clone();
+            for j in 0..i {
+                app.projects[i - j] = app.projects[i - (j + 1)].clone();
+            }
+            app.projects[0] = top;
+            app.sync_projects();
+            None
+        }
+    }
 }
