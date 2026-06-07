@@ -159,7 +159,8 @@ fn read_promote_cmd(args: Vec<String>, index: usize) -> Result<CmdAction, String
 
 fn print_proj_list(app: &AppState) -> Option<String> {
     for pe in &app.projects {
-        let tag_width = 30;
+        let tag_width = 16;
+        let name_width = 32;
         let tag_color = match &pe.proj {
             Ok(_) => Green,
             Err(_) => Red,
@@ -170,13 +171,22 @@ fn print_proj_list(app: &AppState) -> Option<String> {
                 .fg(tag_color)
                 .paint(format!("{:tag_width$}", &pe.pdef.tag))
         );
-        println!(
-            "{}",
-            match &pe.proj {
-                Ok(p) => p.name.clone(),
-                Err(s) => s.clone(),
+        match &pe.proj {
+            Ok(p) => {
+                // The extra space is because 0x26d4 is a double (screen) width character
+                println!("{:name_width$}  {}", &p.name, &p.desc)
             }
-        );
+            Err(s) => {
+                println!("{:name_width$} {s}", char::from_u32(0x26d4 as u32).unwrap())
+            }
+        }
+        // println!(
+        //     "{}",
+        //     match &pe.proj {
+        //         Ok(p) => p.name.clone(),
+        //         Err(s) => s.clone(),
+        //     }
+        // );
     }
 
     None
